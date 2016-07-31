@@ -6,15 +6,17 @@
 library(dplyr)
 library(lubridate)
 
-# As the data set is large and we are creating 4 scripts to generate plots, 
-# to speed this up we will only read the large file in once.
+# As the data set is large and we are using 4 scripts to generate 4 plots using
+# the same data set, we will speed up the execution by only reading the large
+# file once.
 # After the initial read, the script creates a new file
-# "small_power_consumption.txt" that contains data just for 01-02-2007 and
-# 02-02-2007.
-# In order to create the 2nd and subsequent plots, this smaller file can then
-# be read in faster and used to generate the plots via different the other
-# scripts. The small file creation code is included in all 4 scripts so that
-# they can be run in any order.
+# "small_power_consumption.txt" that contains the data just for 01-02-2007 and
+# 02-02-2007 (as these are the only 2 dates we are looking at).
+# When the other scripts are run to generate the subsequent plots, if the file
+# "small_power_consumpiton.txt" exists in the working directly, then this will
+# be read into R instead of the large file.
+# All 4 scripts include this code to either read or create the small file so
+# that the scripts can be run independently and in any order.
 
 # Check for existance of small data file
 if (file.exists("small_power_consumption.txt")){
@@ -27,21 +29,23 @@ if (file.exists("small_power_consumption.txt")){
     
     # Convert the Date column to a date object
     powercon$Date <- ymd(powercon$Date)
+    
 } else{
     # If the small file does not exist yet we need to read from the original
     # data
+    
     # First check if we need to download the zip file
     if (!file.exists("household_power_consumption.zip")){
         download.file("https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2Fhousehold_power_consumption.zip",
                       destfile = "household_power_consumption.zip")
     }
     
-    # Then if we need to unzip it
+    # Then if we need to unzip it (if this has not already been done)
     if (!file.exists("household_power_consumption.txt")){
         unzip("household_power_consumption.zip")
     }
     
-    # Read in the data from the large file
+    # Now we can read in the data from the large file
     powercon <- read.table("household_power_consumption.txt",
                            header = TRUE,
                            sep = ";",
@@ -53,13 +57,13 @@ if (file.exists("small_power_consumption.txt")){
     # Convert the Date column to a date object
     powercon$Date <- dmy(powercon$Date)
     
-    # Subset data to just the dates 01/02/2007 and 02/02/2007
+    # Extract data just for the dates 01/02/2007 and 02/02/2007
     powerconfirst <- filter(powercon, Date == "2007-02-01")
     powerconsecond <- filter(powercon, Date == "2007-02-02")
     powercon <- rbind(powerconfirst, powerconsecond)
     
-    # Remove ojects no longer needed
-    rm(c(powerconfirst, powerconsecond))
+    # Remove the ojects that are no longer needed
+    rm(list = c("powerconfirst", "powerconsecond"))
     
     # Create the small file with just the required dates so that the script
     # can run faster next time
